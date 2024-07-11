@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory Management</title>
+    <script>
+        function updateSubcategories() {
+            const category = document.getElementById('primary_category').value;
+            const subcategorySelect = document.getElementById('sub_category');
+            subcategorySelect.innerHTML = ''; // Clear existing options
+
+            fetch(`get_subcategories.php?category=${category}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(sub => {
+                        const option = document.createElement('option');
+                        option.value = sub.id;
+                        option.textContent = sub.name;
+                        subcategorySelect.appendChild(option);
+                    });
+                    const addOption = document.createElement('option');
+                    addOption.value = 'add_new';
+                    addOption.textContent = 'Add new subcategory';
+                    subcategorySelect.appendChild(addOption);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('primary_category').addEventListener('change', function () {
+                if (this.value === 'add_new') {
+                    const newCategory = prompt('Enter new category name:');
+                    if (newCategory) {
+                        fetch('add_category.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `name=${newCategory}`
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    const option = document.createElement('option');
+                                    option.value = data.id;
+                                    option.textContent = newCategory;
+                                    document.getElementById('primary_category').appendChild(option);
+                                    document.getElementById('primary_category').value = data.id;
+                                    updateSubcategories(); // Update subcategories after adding new category
+                                } else {
+                                    alert('Failed to add category: ' + data.message);
+                                }
+                            });
+                    }
+                } else {
+                    updateSubcategories();
+                }
+            });
+
+            document.getElementById('sub_category').addEventListener('change', function () {
+                if (this.value === 'add_new') {
+                    const newSubcategory = prompt('Enter new subcategory name:');
+                    const categoryId = document.getElementById('primary_category').value;
+                    if (newSubcategory && categoryId) {
+                        fetch('add_subcategory.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `name=${newSubcategory}&category_id=${categoryId}`
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    const option = document.createElement('option');
+                                    option.value = data.id;
+                                    option.textContent = newSubcategory;
+                                    document.getElementById('sub_category').appendChild(option);
+                                    document.getElementById('sub_category').value = data.id;
+                                } else {
+                                    alert('Failed to add subcategory: ' + data.message);
+                                }
+                            });
+                    }
+                }
+            });
+
+            // Populate initial subcategories for the selected category on page load
+            updateSubcategories();
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Inventory Management</h1>
+    <form action="add_item.php" method="post">
+        <label for="primary_category">Primary Category:</label>
+        <select id="primary_category" name="primary_category" required>
+            <option value="">Select category</option>
+            <option value="1">Food and Beverages</option>
+            <option value="2">Equipments</option>
+            <option value="3">Decors</option>
+            <!-- Add more options as needed -->
+            <option value="add_new">Add new category</option>
+        </select>
+        <label for="sub_category">Sub Category:</label>
+        <select id="sub_category" name="sub_category" required>
+            <option value="add_new">Add new subcategory</option>
+        </select><br><br>
+
+        <label>Perishability:</label>
+        <input type="radio" id="perishable" name="perishable" value="1" required>
+        <label for="perishable">Perishable</label>
+        <input type="radio" id="non_perishable" name="perishable" value="0" required>
+        <label for="non_perishable">Non-Perishable</label><br><br>
+
+        <label for="item_name">Item Name:</label>
+        <input type="text" id="item_name" name="item_name" required><br><br>
+
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" required>
+        <select id="unit" name="unit" required>
+            <option value="ml">ml</option>
+            <option value="kg">kg</option>
+            <option value="units">units</option>
+            <!-- Add more units as needed -->
+        </select><br><br>
+
+        <label for="expiry_date">Expiry Date (if any):</label>
+        <input type="date" id="expiry_date" name="expiry_date"><br><br>
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea><br><br>
+
+        <label for="storage_location">Storage Location:</label>
+        <input type="text" id="storage_location" name="storage_location" required><br><br>
+
+        <input type="submit" value="Add Item">
+    </form>
+</body>
+
+</html>
